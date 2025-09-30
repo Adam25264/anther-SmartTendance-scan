@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartTendance - Student App</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        :root {
+            --primary: #44ff44;
+            --secondary: #3366cc;
+            --danger: #ff4444;
+            --warning: #ffaa00;
+            --dark: #121212;
+            --darker: #0a0a0a;
+            --light: #f5f5f5;
+            --card-bg: #1a1a1a;
+            --card-border: #333;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        
+        body {
+            background: var(--dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        body.light-mode {
+            --primary: #2563eb;
+            --secondary: #3b82f6;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --dark: #f8fafc;
+            --darker: #e2e8f0;
+            --light: #ffffff;
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .app-container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding-bottom: 80px;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--darker) 0%, var(--card-bg) 100%);
+            padding: 20px 15px;
+            text-align: center;
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-content {
+            flex: 1;
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .student-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .theme-toggle, .settings-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.3s;
+        }
+        
+        .theme-toggle:hover, .settings-toggle:hover {
+            color: var(--primary);
+        }
+        
+        /* Horizontal Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: var(--darker);
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 80px;
+            z-index: 90;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: var(--card-bg);
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 120px;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            font-weight: bold;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            padding: 20px 15px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Scanner Section */
+        .scanner-section {
+            text-align: center;
+        }
+        
+        .scanner-box {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 2px solid var(--card-border);
+            box-shadow: var(--shadow);
+        }
+        
+        .camera-container {
+            width: 100%;
+            max-width: 300px;
+            height: 300px;
+            margin: 0 auto 20px;
+            border: 3px solid var(--primary);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: var(--primary);
+            animation: scan 2s infinite;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            width: 200px;
+            transition: all 0.3s;
+            box-shadow: var(--shadow);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn:disabled {
+            background: var(--text-secondary);
+            color: var(--text-primary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+        }
+        
+        /* Attendance History */
+        .attendance-list {
+            margin-top: 20px;
+        }
+        
+        .attendance-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid var(--primary);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .attendance-card.absent {
+            border-left-color: var(--danger);
+        }
+        
+        .attendance-card h3 {
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+        
+        .attendance-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .info-item {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .status-present {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .status-absent {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+        
+        /* Course Summary Table */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .summary-table th, .summary-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .summary-table th {
+            background: var(--darker);
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+        
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .summary-table tr:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+        
+        /* Profile Section */
+        .profile-section {
+            text-align: center;
+        }
+        
+        .profile-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+            box-shadow: var(--shadow);
+        }
+        
+        .university-name {
+            color: var(--primary);
+            font-weight: bold;
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--card-border);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .profile-details {
+            margin: 20px 0;
+            text-align: left;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        /* Subscription Section */
+        .subscription-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 2px solid var(--primary);
+            box-shadow: var(--shadow);
+        }
+        
+        .subscription-info {
+            margin: 15px 0;
+        }
+        
+        .subscription-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .payment-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .payment-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .payment-option:hover {
+            background: rgba(37, 99, 235, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .payment-icon {
+            margin-right: 15px;
+            font-size: 24px;
+            color: var(--primary);
+        }
+        
+        /* Settings Section */
+        .settings-section {
+            text-align: left;
+        }
+        
+        .settings-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .settings-group {
+            margin-bottom: 25px;
+        }
+        
+        .settings-group h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .language-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .language-option {
+            padding: 15px;
+            background: var(--darker);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .language-option.active {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .language-option:hover {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        /* Payment Modal */
+        .payment-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .payment-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid var(--primary);
+            max-width: 400px;
+            width: 100%;
+            box-shadow: var(--shadow);
+        }
+        
+        .payment-form {
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        /* Results Modal */
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .result-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid var(--primary);
+            max-width: 400px;
+            width: 100%;
+            box-shadow: var(--shadow);
+        }
+        
+        .result-success {
+            border-color: var(--primary);
+        }
+        
+        .result-error {
+            border-color: var(--danger);
+        }
+        
+        .result-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .header h1 { font-size: 20px; }
+            .tab { padding: 12px 8px; font-size: 12px; }
+            .camera-container { height: 250px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .btn { width: 100%; margin: 5px 0; }
+            .language-options { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1 id="headerTitle">🎓 SmartTendance</h1>
+                <div class="student-info">
+                    <span id="studentName">Loading...</span> • 
+                    <span id="studentId">STU0000</span>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button class="settings-toggle" onclick="switchTab('settings')">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Horizontal Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="tab active" onclick="switchTab('scanner')">
+                <i class="fas fa-qrcode"></i> <span id="tabScan">Scan</span>
+            </button>
+            <button class="tab" onclick="switchTab('history')">
+                <i class="fas fa-history"></i> <span id="tabHistory">History</span>
+            </button>
+            <button class="tab" onclick="switchTab('subscription')">
+                <i class="fas fa-crown"></i> <span id="tabSubscription">Subscription</span>
+            </button>
+            <button class="tab" onclick="switchTab('profile')">
+                <i class="fas fa-user"></i> <span id="tabProfile">Profile</span>
+            </button>
+        </div>
+        
+        <!-- Scanner Tab -->
+        <div id="scanner" class="tab-content active">
+            <div class="scanner-section">
+                <h2 id="scanTitle">Scan QR Code</h2>
+                <p style="color: var(--text-secondary); margin: 10px 0;" id="scanDescription">Point your camera at the professor's QR code</p>
+                
+                <div class="scanner-box">
+                    <div class="camera-container">
+                        <video id="video" playsinline></video>
+                        <div class="scan-overlay">
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" onclick="startScanner()" id="startBtn">
+                        <i class="fas fa-play"></i> <span id="startScan">Start Scanner</span>
+                    </button>
+                    <button class="btn" onclick="stopScanner()" id="stopBtn" disabled>
+                        <i class="fas fa-stop"></i> <span id="stopScan">Stop Scanner</span>
+                    </button>
+                </div>
+                
+                <div style="color: var(--text-secondary); font-size: 12px; margin-top: 20px;">
+                    <i class="fas fa-lightbulb"></i> <span id="scanTip">Tips: Ensure good lighting and hold steady for 2 seconds</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- History Tab -->
+        <div id="history" class="tab-content">
+            <h2 id="historyTitle">Attendance History</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;" id="historyDescription">Your recent attendance records</p>
+            
+            <!-- Summary Table -->
+            <div class="summary-section">
+                <h3 id="summaryTitle">All Courses Summary</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th id="courseHeader">Course</th>
+                            <th id="attendedHeader">Attended</th>
+                            <th id="statusHeader">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                        <!-- Summary rows will be generated here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Attendance List -->
+            <div class="attendance-list" id="attendanceList">
+                <!-- Attendance records will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Subscription Tab -->
+        <div id="subscription" class="tab-content">
+            <h2 id="subscriptionTitle">Semester Subscription</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;" id="subscriptionDescription">Manage your subscription and payment methods</p>
+            
+            <div class="subscription-card">
+                <h3><i class="fas fa-crown"></i> <span id="currentPlan">Current Plan</span></h3>
+                
+                <div class="subscription-info">
+                    <div class="subscription-row">
+                        <span id="planLabel">Plan:</span>
+                        <span><strong id="planValue">Student Access</strong></span>
+                    </div>
+                    <div class="subscription-row">
+                        <span id="priceLabel">Price:</span>
+                        <span><strong id="priceValue">$1 / 4 months</strong></span>
+                    </div>
+                    <div class="subscription-row">
+                        <span id="statusLabel">Status:</span>
+                        <span id="subscriptionStatus" style="color: var(--primary);"><strong id="statusValue">Active (Paid)</strong></span>
+                    </div>
+                    <div class="subscription-row">
+                        <span id="expiresLabel">Expires:</span>
+                        <span id="subscriptionExpiry"><strong id="expiresValue">Dec 15, 2025</strong></span>
+                    </div>
+                </div>
+                
+                <h4 style="margin-top: 20px;" id="paymentMethods">Payment Methods</h4>
+                <div class="payment-options">
+                    <div class="payment-option" onclick="showPaymentForm('card')">
+                        <div class="payment-icon"><i class="fas fa-credit-card"></i></div>
+                        <div>
+                            <div><strong id="payCard">Pay with Card</strong></div>
+                            <div style="font-size: 12px; color: var(--text-secondary);" id="cardDescription">Visa, Mastercard, American Express</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-secondary);">
+                    <i class="fas fa-shield-alt"></i> <span id="securePayment">Secure Payment Powered by Stripe</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Tab -->
+        <div id="profile" class="tab-content">
+            <div class="profile-section">
+                <div class="profile-card">
+                    <div class="profile-avatar" id="studentAvatar">JS</div>
+                    <h2 id="profileName">John Smith</h2>
+                    <p style="color: var(--text-secondary);" id="profileId">STU1001</p>
+                    <div class="university-name" id="universityName">University of Technology</div>
+                    <p style="color: var(--text-secondary); margin-top: 5px;" id="profileDepartment">Computer Science Department</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalClasses">6</div>
+                        <div class="stat-label" id="totalClassesLabel">Total Classes</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalPresent">4</div>
+                        <div class="stat-label" id="totalPresentLabel">Total Present</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalAbsent">2</div>
+                        <div class="stat-label" id="totalAbsentLabel">Total Absent</div>
+                    </div>
+                </div>
+                
+                <div class="profile-details">
+                    <div class="detail-row">
+                        <span id="emailLabel">Email:</span>
+                        <span>john.smith@student.edu</span>
+                    </div>
+                    <div class="detail-row">
+                        <span id="enrollmentLabel">Enrollment Date:</span>
+                        <span>Sep 1, 2023</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> <span id="logoutButton">Logout</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="settings-section">
+                <h2 id="settingsTitle">Settings</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;" id="settingsDescription">Customize your app experience</p>
+                
+                <div class="settings-card">
+                    <div class="settings-group">
+                        <h3 id="languageTitle">Language</h3>
+                        <div class="language-options">
+                            <div class="language-option active" onclick="changeLanguage('en')">
+                                English
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('es')">
+                                Español
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('fr')">
+                                Français
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('de')">
+                                Deutsch
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('it')">
+                                Italiano
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('pt')">
+                                Português
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('ru')">
+                                Русский
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('zh')">
+                                中文
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('ja')">
+                                日本語
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('ko')">
+                                한국어
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('ar')">
+                                العربية
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('hi')">
+                                हिन्दी
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="payment-modal" id="paymentModal" style="display: none;">
+        <div class="payment-content" id="paymentContent">
+            <h3 id="paymentTitle">Pay with Card</h3>
+            <div class="payment-form" id="cardPaymentForm">
+                <div class="form-group">
+                    <label for="cardNumber" id="cardNumberLabel">Card Number</label>
+                    <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                </div>
+                <div class="form-group">
+                    <label for="cardName" id="cardNameLabel">Name on Card</label>
+                    <input type="text" id="cardName" placeholder="John Smith">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expiryDate" id="expiryDateLabel">Expiry Date</label>
+                        <input type="text" id="expiryDate" placeholder="MM/YY" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv" id="cvvLabel">CVV</label>
+                        <input type="text" id="cvv" placeholder="123" maxlength="3">
+                    </div>
+                </div>
+                <button class="btn" onclick="processPayment('card')" style="width: 100%; margin: 20px 0 10px;">
+                    <i class="fas fa-lock"></i> <span id="payAmount">Pay $1.00</span>
+                </button>
+            </div>
+            
+            <button class="btn" onclick="closePaymentModal()" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--text-secondary);">
+                <span id="cancelPayment">Cancel</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div class="result-modal" id="resultModal" style="display: none;">
+        <div class="result-content" id="resultContent">
+            <div class="result-icon" id="resultIcon">✅</div>
+            <h3 id="resultTitle">Payment Successful</h3>
+            <p id="resultMessage" style="margin: 15px 0;"></p>
+            <button class="btn" onclick="closeResult()">
+                <span id="continueButton">Continue</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== SHARED DATA ACCESS ====================
+        // Get shared data from lecturer system
+        function getSharedData() {
+            const data = localStorage.getItem('smartTendanceShared');
+            return data ? JSON.parse(data) : { students: [], attendanceRecords: [], lectures: [] };
+        }
+
+        // Update shared data
+        function updateSharedData(newData) {
+            localStorage.setItem('smartTendanceShared', JSON.stringify({
+                ...newData,
+                lastUpdate: new Date().toISOString()
+            }));
+        }
+
+        // ==================== STUDENT DATA ====================
+        // Current student data
+        const currentStudent = {
+            id: 'STU1001',
+            name: 'John Smith',
+            avatar: 'JS',
+            department: 'Computer Science Department',
+            email: 'john.smith@student.edu',
+            enrollmentDate: 'Sep 1, 2023',
+            university: 'University of Technology'
+        };
+
+        // Subscription data
+        let subscriptionData = {
+            active: true,
+            expiryDate: new Date('2025-12-15'),
+            paymentMethod: 'card'
+        };
+
+        // Sample courses data
+        const courses = [
+            { id: 'CS101', name: 'Computer Science 101', color: '#2563eb' },
+            { id: 'MATH201', name: 'Mathematics 201', color: '#3b82f6' },
+            { id: 'PHY301', name: 'Physics 301', color: '#f59e0b' },
+            { id: 'CHEM101', name: 'Chemistry 101', color: '#ef4444' },
+            { id: 'BIO202', name: 'Biology 202', color: '#10b981' },
+            { id: 'ENG101', name: 'English 101', color: '#8b5cf6' }
+        ];
+
+        // Current selected course for history view
+        let selectedCourse = 'CS101';
+        let currentPaymentMethod = '';
+
+        // ==================== LANGUAGE SUPPORT ====================
+        const languages = {
+            en: {
+                headerTitle: "🎓 SmartTendance",
+                tabScan: "Scan",
+                tabHistory: "History",
+                tabSubscription: "Subscription",
+                tabProfile: "Profile",
+                scanTitle: "Scan QR Code",
+                scanDescription: "Point your camera at the professor's QR code",
+                startScan: "Start Scanner",
+                stopScan: "Stop Scanner",
+                scanTip: "Tips: Ensure good lighting and hold steady for 2 seconds",
+                historyTitle: "Attendance History",
+                historyDescription: "Your recent attendance records",
+                summaryTitle: "All Courses Summary",
+                courseHeader: "Course",
+                attendedHeader: "Attended",
+                statusHeader: "Status",
+                subscriptionTitle: "Semester Subscription",
+                subscriptionDescription: "Manage your subscription and payment methods",
+                currentPlan: "Current Plan",
+                planLabel: "Plan:",
+                planValue: "Student Access",
+                priceLabel: "Price:",
+                priceValue: "$1 / 4 months",
+                statusLabel: "Status:",
+                statusValue: "Active (Paid)",
+                expiresLabel: "Expires:",
+                paymentMethods: "Payment Methods",
+                payCard: "Pay with Card",
+                cardDescription: "Visa, Mastercard, American Express",
+                securePayment: "Secure Payment Powered by Stripe",
+                totalClassesLabel: "Total Classes",
+                totalPresentLabel: "Total Present",
+                totalAbsentLabel: "Total Absent",
+                emailLabel: "Email:",
+                enrollmentLabel: "Enrollment Date:",
+                logoutButton: "Logout",
+                settingsTitle: "Settings",
+                settingsDescription: "Customize your app experience",
+                languageTitle: "Language",
+                paymentTitle: "Pay with Card",
+                cardNumberLabel: "Card Number",
+                cardNameLabel: "Name on Card",
+                expiryDateLabel: "Expiry Date",
+                cvvLabel: "CVV",
+                payAmount: "Pay $1.00",
+                cancelPayment: "Cancel",
+                continueButton: "Continue"
+            },
+            es: {
+                headerTitle: "🎓 SmartTendance",
+                tabScan: "Escanear",
+                tabHistory: "Historial",
+                tabSubscription: "Suscripción",
+                tabProfile: "Perfil",
+                scanTitle: "Escanear Código QR",
+                scanDescription: "Apunte su cámara al código QR del profesor",
+                startScan: "Iniciar Escáner",
+                stopScan: "Detener Escáner",
+                scanTip: "Consejos: Asegure buena iluminación y mantenga estable durante 2 segundos",
+                historyTitle: "Historial de Asistencia",
+                historyDescription: "Tus registros de asistencia recientes",
+                summaryTitle: "Resumen de Todos los Cursos",
+                courseHeader: "Curso",
+                attendedHeader: "Asistió",
+                statusHeader: "Estado",
+                subscriptionTitle: "Suscripción Semestral",
+                subscriptionDescription: "Gestiona tu suscripción y métodos de pago",
+                currentPlan: "Plan Actual",
+                planLabel: "Plan:",
+                planValue: "Acceso Estudiantil",
+                priceLabel: "Precio:",
+                priceValue: "$1 / 4 meses",
+                statusLabel: "Estado:",
+                statusValue: "Activo (Pagado)",
+                expiresLabel: "Caduca:",
+                paymentMethods: "Métodos de Pago",
+                payCard: "Pagar con Tarjeta",
+                cardDescription: "Visa, Mastercard, American Express",
+                securePayment: "Pago Seguro con Stripe",
+                totalClassesLabel: "Total Clases",
+                totalPresentLabel: "Total Presente",
+                totalAbsentLabel: "Total Ausente",
+                emailLabel: "Correo:",
+                enrollmentLabel: "Fecha de Inscripción:",
+                logoutButton: "Cerrar Sesión",
+                settingsTitle: "Configuración",
+                settingsDescription: "Personaliza tu experiencia en la app",
+                languageTitle: "Idioma",
+                paymentTitle: "Pagar con Tarjeta",
+                cardNumberLabel: "Número de Tarjeta",
+                cardNameLabel: "Nombre en la Tarjeta",
+                expiryDateLabel: "Fecha de Vencimiento",
+                cvvLabel: "CVV",
+                payAmount: "Pagar $1.00",
+                cancelPayment: "Cancelar",
+                continueButton: "Continuar"
+            },
+            fr: {
+                headerTitle: "🎓 SmartTendance",
+                tabScan: "Scanner",
+                tabHistory: "Historique",
+                tabSubscription: "Abonnement",
+                tabProfile: "Profil",
+                scanTitle: "Scanner QR Code",
+                scanDescription: "Pointez votre caméra vers le QR Code du professeur",
+                startScan: "Démarrer le Scanner",
+                stopScan: "Arrêter le Scanner",
+                scanTip: "Conseils: Assurez un bon éclairage et maintenez stable pendant 2 secondes",
+                historyTitle: "Historique de Présence",
+                historyDescription: "Vos enregistrements de présence récents",
+                summaryTitle: "Résumé de Tous les Cours",
+                courseHeader: "Cours",
+                attendedHeader: "Présent",
+                statusHeader: "Statut",
+                subscriptionTitle: "Abonnement Semestriel",
+                subscriptionDescription: "Gérez votre abonnement et vos méthodes de paiement",
+                currentPlan: "Plan Actuel",
+                planLabel: "Plan:",
+                planValue: "Accès Étudiant",
+                priceLabel: "Prix:",
+                priceValue: "1$ / 4 mois",
+                statusLabel: "Statut:",
+                statusValue: "Actif (Payé)",
+                expiresLabel: "Expire:",
+                paymentMethods: "Méthodes de Paiement",
+                payCard: "Payer par Carte",
+                cardDescription: "Visa, Mastercard, American Express",
+                securePayment: "Paiement Sécurisé avec Stripe",
+                totalClassesLabel: "Total Cours",
+                totalPresentLabel: "Total Présent",
+                totalAbsentLabel: "Total Absent",
+                emailLabel: "Email:",
+                enrollmentLabel: "Date d'Inscription:",
+                logoutButton: "Déconnexion",
+                settingsTitle: "Paramètres",
+                settingsDescription: "Personnalisez votre expérience d'application",
+                languageTitle: "Langue",
+                paymentTitle: "Payer par Carte",
+                cardNumberLabel: "Numéro de Carte",
+                cardNameLabel: "Nom sur la Carte",
+                expiryDateLabel: "Date d'Expiration",
+                cvvLabel: "CVV",
+                payAmount: "Payer 1.00$",
+                cancelPayment: "Annuler",
+                continueButton: "Continuer"
+            }
+        };
+
+        // Current language
+        let currentLanguage = 'en';
+
+        // ==================== APP INITIALIZATION ====================
+        function initApp() {
+            document.getElementById('studentName').textContent = currentStudent.name;
+            document.getElementById('studentId').textContent = currentStudent.id;
+            document.getElementById('profileName').textContent = currentStudent.name;
+            document.getElementById('profileId').textContent = currentStudent.id;
+            document.getElementById('studentAvatar').textContent = currentStudent.avatar;
+            document.getElementById('profileDepartment').textContent = currentStudent.department;
+            document.getElementById('universityName').textContent = currentStudent.university;
+            
+            updateSubscriptionDisplay();
+            loadAttendanceHistory();
+            updateStats();
+            generateSummaryTable();
+            
+            // Set initial language
+            updateLanguage();
+            
+            // Check if dark mode is preferred
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('light-mode');
+                document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+            }
+        }
+
+        // Update language
+        function updateLanguage() {
+            const lang = languages[currentLanguage];
+            
+            // Update all text elements
+            for (const [key, value] of Object.entries(lang)) {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = value;
+                }
+            }
+            
+            // Update numbers in summary table
+            generateSummaryTable();
+            
+            // Update active language option
+            document.querySelectorAll('.language-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`.language-option[onclick="changeLanguage('${currentLanguage}')"]`).classList.add('active');
+        }
+
+        // Change language
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            updateLanguage();
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            document.getElementById('themeToggle').innerHTML = isLightMode ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+            localStorage.setItem('darkMode', isLightMode);
+        }
+
+        // ==================== SUBSCRIPTION MANAGEMENT ====================
+        function updateSubscriptionDisplay() {
+            const statusElement = document.getElementById('subscriptionStatus');
+            const expiryElement = document.getElementById('subscriptionExpiry');
+            
+            if (subscriptionData.active) {
+                const now = new Date();
+                const timeLeft = subscriptionData.expiryDate - now;
+                const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+                
+                if (daysLeft <= 0) {
+                    subscriptionData.active = false;
+                    statusElement.innerHTML = '<strong style="color: var(--danger);">Expired</strong>';
+                    expiryElement.innerHTML = '<strong>Expired</strong>';
+                } else {
+                    statusElement.innerHTML = '<strong style="color: var(--primary);">' + languages[currentLanguage].statusValue + '</strong>';
+                    expiryElement.innerHTML = `<strong>${formatDate(subscriptionData.expiryDate)}</strong>`;
+                }
+            } else {
+                statusElement.innerHTML = '<strong style="color: var(--danger);">Expired</strong>';
+                expiryElement.innerHTML = '<strong>Expired</strong>';
+            }
+        }
+
+        // Format date for display
+        function formatDate(date) {
+            return date.toLocaleDateString(currentLanguage === 'ar' ? 'ar-SA' : 
+                                          currentLanguage === 'zh' ? 'zh-CN' : 
+                                          currentLanguage === 'ja' ? 'ja-JP' : 
+                                          currentLanguage === 'ko' ? 'ko-KR' : 
+                                          currentLanguage === 'hi' ? 'hi-IN' : 'en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // ==================== NAVIGATION ====================
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Activate selected tab button
+            event.target.classList.add('active');
+        }
+
+        // ==================== ATTENDANCE MANAGEMENT ====================
+        function generateSummaryTable() {
+            const container = document.getElementById('summaryTableBody');
+            container.innerHTML = '';
+            
+            const sharedData = getSharedData();
+            
+            courses.forEach(course => {
+                const courseRecords = sharedData.attendanceRecords.filter(r => 
+                    r.courseCode === course.id && r.studentId === currentStudent.id
+                );
+                const total = courseRecords.length;
+                const present = courseRecords.filter(r => r.status === 'present').length;
+                
+                // Use checkmark or X based on attendance rate
+                const statusIcon = present / total >= 0.75 ? '✅' : '❌';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${course.name}</td>
+                    <td>${present}/${total}</td>
+                    <td>${statusIcon}</td>
+                `;
+                row.onclick = () => {
+                    selectedCourse = course.id;
+                    loadAttendanceHistory();
+                };
+                container.appendChild(row);
+            });
+        }
+
+        function loadAttendanceHistory() {
+            const container = document.getElementById('attendanceList');
+            container.innerHTML = '';
+            
+            const sharedData = getSharedData();
+            const studentRecords = sharedData.attendanceRecords.filter(r => 
+                r.studentId === currentStudent.id && r.courseCode === selectedCourse
+            );
+            
+            if (studentRecords.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No attendance records found for this course.</p>';
+                return;
+            }
+            
+            studentRecords.forEach(record => {
+                const card = document.createElement('div');
+                card.className = `attendance-card ${record.status === 'absent' ? 'absent' : ''}`;
+                
+                const statusText = record.status === 'present' ? 'PRESENT' : 'ABSENT';
+                
+                card.innerHTML = `
+                    <div>
+                        <h3>${record.courseCode} - ${record.courseName}</h3>
+                        <div class="attendance-info">
+                            <div class="info-item">
+                                <strong>Date:</strong> ${record.date}
+                            </div>
+                            <div class="info-item">
+                                <strong>Time:</strong> ${record.time}
+                            </div>
+                            <div class="info-item">
+                                <strong>Room:</strong> ${record.room}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="status-badge ${record.status === 'present' ? 'status-present' : 'status-absent'}">
+                        ${statusText}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateStats() {
+            const sharedData = getSharedData();
+            const studentRecords = sharedData.attendanceRecords.filter(r => r.studentId === currentStudent.id);
+            
+            const total = studentRecords.length;
+            const present = studentRecords.filter(r => r.status === 'present').length;
+            const absent = studentRecords.filter(r => r.status === 'absent').length;
+            
+            document.getElementById('totalClasses').textContent = total;
+            document.getElementById('totalPresent').textContent = present;
+            document.getElementById('totalAbsent').textContent = absent;
+        }
+
+        // ==================== PAYMENT SYSTEM ====================
+        function showPaymentForm(method) {
+            currentPaymentMethod = method;
+            const modal = document.getElementById('paymentModal');
+            modal.style.display = 'flex';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+            // Clear form fields
+            document.getElementById('cardNumber').value = '';
+            document.getElementById('cardName').value = '';
+            document.getElementById('expiryDate').value = '';
+            document.getElementById('cvv').value = '';
+        }
+
+        function processPayment(method) {
+            // Simulate payment processing
+            setTimeout(() => {
+                closePaymentModal();
+                
+                // Update subscription
+                const now = new Date();
+                const expiryDate = new Date(now);
+                expiryDate.setMonth(expiryDate.getMonth() + 4); // 4 months from now
+                
+                subscriptionData = {
+                    active: true,
+                    expiryDate: expiryDate,
+                    paymentMethod: method
+                };
+                
+                updateSubscriptionDisplay();
+                
+                const successMessage = `Your subscription has been extended for 4 months.<br>New expiry date: ${formatDate(expiryDate)}`;
+                
+                showResult('success', 'Payment Successful!', successMessage);
+                     
+            }, 2000);
+        }
+
+        // ==================== QR SCANNER ====================
+        let videoStream = null;
+        let scanInterval = null;
+
+        async function startScanner() {
+            const video = document.getElementById('video');
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" } 
+                });
+                video.srcObject = videoStream;
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                
+                // Start scanning for QR codes
+                scanInterval = setInterval(scanQRCode, 1000);
+                
+            } catch (err) {
+                showResult('error', 'Camera Error', 'Unable to access camera. Please check permissions.');
+            }
+        }
+
+        function stopScanner() {
+            const video = document.getElementById('video');
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            if (scanInterval) {
+                clearInterval(scanInterval);
+            }
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        function scanQRCode() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    processQRCode(code.data);
+                }
+            }
+        }
+
+        // ==================== REAL ATTENDANCE RECORDING ====================
+        function processQRCode(qrData) {
+            try {
+                const data = JSON.parse(qrData);
+                
+                if (data.type === 'attendance') {
+                    // Check if QR code is expired
+                    const now = new Date().getTime();
+                    if (now > data.expiry) {
+                        showResult('error', 'QR Code Expired', 'This QR code has expired. Please ask your lecturer for a new one.');
+                        return;
+                    }
+                    
+                    // Check if subscription is active
+                    if (!subscriptionData.active) {
+                        showResult('error', 'Subscription Required', 'Your subscription has expired. Please renew to continue using the app.');
+                        return;
+                    }
+                    
+                    stopScanner();
+                    
+                    // Record attendance in shared data
+                    const sharedData = getSharedData();
+                    
+                    // Check if student already recorded attendance for this lecture
+                    const existingRecord = sharedData.attendanceRecords.find(record => 
+                        record.studentId === currentStudent.id && 
+                        record.courseCode === data.courseCode &&
+                        Math.abs(new Date(record.timestamp) - new Date()) < 60000 // Within 1 minute
+                    );
+                    
+                    if (existingRecord) {
+                        showResult('error', 'Already Recorded', 'You have already recorded attendance for this lecture.');
+                        return;
+                    }
+                    
+                    // Create attendance record
+                    const attendanceRecord = {
+                        studentId: currentStudent.id,
+                        studentName: currentStudent.name,
+                        courseCode: data.courseCode,
+                        courseName: data.courseName,
+                        date: new Date().toISOString().split('T')[0],
+                        time: new Date().toLocaleTimeString(),
+                        status: 'present',
+                        room: data.room,
+                        timestamp: new Date().toISOString(),
+                        lectureId: data.lectureId
+                    };
+                    
+                    // Add to shared data
+                    sharedData.attendanceRecords.push(attendanceRecord);
+                    updateSharedData(sharedData);
+                    
+                    // Update local display
+                    loadAttendanceHistory();
+                    updateStats();
+                    generateSummaryTable();
+                    
+                    showResult('success', 'Attendance Recorded!', 
+                        `Course: ${data.courseCode}<br>
+                         Time: ${attendanceRecord.time}<br>
+                         Status: ✅ PRESENT`);
+                }
+            } catch (err) {
+                showResult('error', 'Invalid QR Code', 'Please scan a valid attendance QR code.');
+            }
+        }
+
+        // ==================== RESULT MODAL ====================
+        function showResult(type, title, message) {
+            const modal = document.getElementById('resultModal');
+            const content = document.getElementById('resultContent');
+            const icon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            content.className = `result-content ${type === 'success' ? 'result-success' : 'result-error'}`;
+            icon.textContent = type === 'success' ? '✅' : '❌';
+            resultTitle.textContent = title;
+            resultMessage.innerHTML = message;
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeResult() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                stopScanner();
+                // Redirect to login page (simulated)
+                alert('Logged out successfully');
+                // In real app: window.location.href = 'login.html';
+            }
+        }
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', initApp);
+        
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    </script>
+</body>
+</html>
